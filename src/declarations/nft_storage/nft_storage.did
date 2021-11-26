@@ -1,0 +1,44 @@
+type Time = int;
+type Storage = 
+ service {
+   addRecord: (principal, Operation__1, opt principal, opt principal, 
+    nat, opt nat64, Time) -> (nat);
+   allHistory: () -> (vec OpRecord) query;
+   getCycles: () -> (nat) query;
+   getHistoryByAccount: (principal) -> (opt vec OpRecord) query;
+   getHistoryByIndex: (nat) -> (OpRecord) query;
+   owner: () -> (principal) query;
+   setTokenCanisterId: (principal) -> (bool);
+   tokenCanisterId: () -> (principal) query;
+   txAmount: () -> (nat) query;
+ };
+type Operation__1 = 
+ variant {
+   delist;
+   init;
+   list;
+   mint;
+   purchase;
+   transfer;
+ };
+type Operation = 
+ variant {
+   delist;
+   init;
+   list;
+   mint;
+   purchase;
+   transfer;
+ };
+type OpRecord = 
+ record {
+   caller: principal;
+   from: opt principal;
+   index: nat;
+   op: Operation;
+   price: opt nat64;
+   timestamp: Time;
+   to: opt principal;
+   tokenId: nat;
+ };
+service : (principal) -> Storage

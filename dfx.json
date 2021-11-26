@@ -17,6 +17,14 @@
         "dist/ic_vault_assets/"
       ],
       "type": "assets"
+    },
+    "nft_token": {
+      "main": "src/nft_token/nft_token.mo",
+      "type": "motoko"
+    },
+    "nft_storage": {
+      "main": "src/nft_token/storage.mo",
+      "type": "motoko"
     }
   },
   "defaults": {

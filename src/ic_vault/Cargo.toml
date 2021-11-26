@@ -9,6 +9,18 @@ edition = "2018"
 path = "lib.rs"
 crate-type = ["cdylib"]
 
+[features]
+ecdsa = []
+keccak256 = []
+
 [dependencies]
 ic-cdk = "0.3"
 ic-cdk-macros = "0.3"
+getrandom = { version = "0.2.3", features = ["custom"] }
+k256 = "0.9.6"
+sha2 = "0.9.8"
+sha3 = "0.9.1"
+hex-literal = "0.3.0"
+hex = "0.4.3"
+serde = "1.0.130"
+tokio = { version = "1.14.0", features = ["macros", "rt"] }

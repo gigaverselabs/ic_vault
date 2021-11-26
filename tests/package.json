@@ -1,0 +1,16 @@
+{
+  "name": "tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "signature_rust.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "web3": "^1.6.1",
+    "web3-eth-contract": "^1.6.1",
+    "@metamask/eth-sig-util": "^4.0.0"
+  }
+}

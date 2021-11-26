@@ -1,0 +1,2 @@
+module.exports.privateKey = "7559c8baf3f1ba483172d609c78b781f7be086d8b4e6b7f6048ada68c46d1c3d";
+module.exports.publicAddress = "0xC8478Bb0dB234cE03A746288AD386b2B24970e3a";

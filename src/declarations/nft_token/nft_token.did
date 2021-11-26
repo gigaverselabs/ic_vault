@@ -1,0 +1,97 @@
+type TokenDesc = 
+ record {
+   desc: text;
+   id: nat;
+   name: text;
+   owner: principal;
+   properties: vec Property;
+   url: text;
+ };
+type Time = int;
+type StreamingStrategy = variant {
+                           Callback:
+                            record {
+                              callback:
+                               func (StreamingCallbackToken) ->
+                                (StreamingCallbackResponse) query;
+                              token: StreamingCallbackToken;
+                            };};
+type StreamingCallbackToken = 
+ record {
+   content_encoding: text;
+   index: nat;
+   key: text;
+   sha256: opt blob;
+ };
+type StreamingCallbackResponse = 
+ record {
+   body: blob;
+   token: opt StreamingCallbackToken;
+ };
+type StorageActor = 
+ service {
+   addRecord: (principal, Operation, opt principal, opt principal, nat,
+    opt nat64, Time) -> (nat);
+ };
+type Property = 
+ record {
+   name: text;
+   value: text;
+ };
+type Operation = 
+ variant {
+   delist;
+   init;
+   list;
+   mint;
+   purchase;
+   transfer;
+ };
+type MintRequest = 
+ record {
+   contentType: text;
+   data: vec nat8;
+   desc: text;
+   name: text;
+   properties: vec Property;
+   url: text;
+ };
+type ICPunk = 
+ service {
+   add_genesis_record: () -> (nat);
+   data_of: (nat) -> (TokenDesc) query;
+   get_cycles: () -> (nat) query;
+   get_storage_canister: () -> (opt StorageActor) query;
+   http_request: (HttpRequest) -> (HttpResponse) query;
+   mint: (MintRequest) -> (nat);
+   multi_mint: (vec MintRequest) -> (vec nat);
+   name: () -> (text) query;
+   owner: () -> (principal) query;
+   owner_of: (nat) -> (principal) query;
+   set_owner: (principal) -> (bool);
+   set_storage_canister_id: (opt principal) -> (bool);
+   symbol: () -> (text) query;
+   total_supply: () -> (nat) query;
+   transfer_to: (principal, nat, opt principal) -> (bool);
+   user_tokens: (principal) -> (vec nat) query;
+ };
+type HttpResponse = 
+ record {
+   body: blob;
+   headers: vec HeaderField;
+   status_code: nat16;
+   streaming_strategy: opt StreamingStrategy;
+ };
+type HttpRequest = 
+ record {
+   body: blob;
+   headers: vec HeaderField;
+   method: text;
+   url: text;
+ };
+type HeaderField = 
+ record {
+   text;
+   text;
+ };
+service : (text, text, nat, principal) -> ICPunk

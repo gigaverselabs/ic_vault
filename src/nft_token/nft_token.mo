@@ -63,10 +63,13 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
 
     // private var owners = HashMap.HashMap<Principal, List<Nat>>(1, isEq, Principal.hash);
     // private var tokens_ = HashMap.HashMap<Nat, Principal>(totalSupply_, isEq,  Nat32.fromNat);
-    private stable var tokens_ : [var Types.TokenStorage] = [var];
-    private stable var listed_ : [Listing] = [];
+
+    private stable var tokens_ : [var ?Types.TokenStorage] = Array.init<?Types.TokenStorage>(totalSupply_, null);
+    // private stable var listed_ : [Listing] = [];
+
 
     private var assetMap_ = HashMap.HashMap<Text, TokenData>(totalSupply_, Text.equal, Text.hash);
+
     private var owners_ = HashMap.HashMap<Principal, [Nat]>(totalSupply_, isEqP,  Principal.hash);
 
     // private var tokes = Array.init(1, Principal.fromText("aaaaaa-aaaa"));
@@ -150,7 +153,8 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
         };
 
         //Add new token to array
-        tokens_ := Array.thaw(Array.append(Array.freeze(tokens_), Array.make(token)));
+        tokens_[data.tokenId] := ?token;
+        // tokens_ := Array.thaw(Array.append(Array.freeze(tokens_), Array.make(token)));
         //Add new token to user map
         assignToOwner(caller, totalSupply_);
 
@@ -176,7 +180,23 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
         //We can mint until max supply has been reached
         assert(totalSupply_ < maxSupply_);
 
+        assert(Option.isNull(tokens_[data.tokenId-1]));
+
         return await mint_(msg.caller, data);
+    };
+
+    public shared(msg) func burn(tokenId: Nat) : async Bool {
+        assert(Option.isSome(tokens_[tokenId-1]));
+
+        var token = Option.unwrap(tokens_.get(tokenId-1));
+
+        var tokens = Option.unwrap(owners_.get(token.owner));
+        tokens_[tokenId-1] := null;
+        owners_.put(token.owner, Array.filter<Nat>(tokens, func(x) {x != token.id}));
+
+        totalSupply_ -= 1;
+
+        return false;
     };
 
     //Mint multiple tokens
@@ -228,27 +248,31 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
     };
 
     ///Returns owner of given token
-    public query func owner_of(tokenId: Nat) : async Principal {
+    public query func owner_of(tokenId: Nat) : async ?Principal {
         validate_(tokenId);
 
         //The array is 0 based, and token ids starts from 1, so w need to subtract 1
         var token = tokens_.get(tokenId-1);
 
-        token.owner;
+        switch token {
+            case null null;
+            case (?token) return ?token.owner;
+        }
     };
 
     //Checks if tokenId in question is valid
     private func validate_(tokenId: Nat) {
+        
         assert(tokenId < totalSupply_+1);
         assert(tokenId > 0);
+        assert(Option.isSome(tokens_[tokenId-1]));
     };
 
     //Returns description of the token
     public query func data_of(tokenId: Nat) : async TokenDesc {
         validate_(tokenId);
 
-        let token = tokens_[tokenId-1];
-
+        let token = Option.unwrap(tokens_[tokenId-1]);
         {
             id = token.id;
             url = token.url;
@@ -280,6 +304,7 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
         var tokens = Option.unwrap(owners_.get(token.owner));
         //Remove token from current owner
         owners_.put(token.owner, Array.filter<Nat>(tokens, func(x) {x != token.id}));
+        //Add token to new owner
         assignToOwner(to, token.id);
 
         token.owner := to;
@@ -290,14 +315,12 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
     public shared(msg) func transfer_to(to: Principal, tokenId: Nat, notify: ?Principal) : async Bool {
         validate_(tokenId);
 
-        var token = tokens_.get(tokenId-1);
+        var token = Option.unwrap(tokens_.get(tokenId-1));
         //Only owner of the token can transfer it
         assert(token.owner == msg.caller);
 
         //Transfer token
         transfer_(to, token);
-
-        //Update owner in token array
 
         //Add #transfer record to ledger
         let time = Time.now();

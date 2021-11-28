@@ -68,6 +68,7 @@ module {
     };
 
     public type MintRequest = {
+        tokenId: Nat;
         name: Text;
         url: Text;
         desc: Text;
@@ -75,8 +76,6 @@ module {
         data: [Nat8];
         contentType: Text;
     };
-
-
 
     //
     // Payment notification endpoint, called by ledger

@@ -1,6 +1,25 @@
-service : {
-    "greet": (text) -> (text) query;
+ type DepositEntry = 
+ record {
+   owner: principal;
+   token: principal;
+   token_id: nat;
+   time: nat;
+ };
 
-    "withdrawERC721": (nat, text, nat, vec nat8) -> (bool);
-    "depositERC721": (nat, text, nat, vec nat8) -> (bool);
+  type WithdrawalEntry = 
+ record {
+   to: principal;
+   token: principal;
+   token_id: nat;
+   time: nat;
+ };
+
+service : {
+    "deposit_count": () -> (nat) query;
+    "get_deposits": (nat) -> (vec DepositEntry) query;
+    "withdrawal_count": () -> (nat) query;
+    "get_withdrawals": (nat) -> (vec WithdrawalEntry) query;
+
+    "withdraw_nft": (text, nat, text) -> (Result);
+    "transfer_notification": (principal, principal, nat, nat) -> (Result);
 }

@@ -35,7 +35,7 @@ use ic_cdk_macros::*;
 use ic_cdk::export::candid::{CandidType, Deserialize, Principal};
 
 #[cfg(not(test))]
-use ic_cdk::{id,caller,time};
+use ic_cdk::{id,caller};
 #[cfg(test)]
 fn id() -> Principal {
     return Principal::from_text("rwlgt-iiaaa-aaaaa-aaaaa-cai").unwrap();

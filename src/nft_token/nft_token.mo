@@ -64,7 +64,7 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
     // private var owners = HashMap.HashMap<Principal, List<Nat>>(1, isEq, Principal.hash);
     // private var tokens_ = HashMap.HashMap<Nat, Principal>(totalSupply_, isEq,  Nat32.fromNat);
 
-    private stable var tokens_ : [var ?Types.TokenStorage] = Array.init<?Types.TokenStorage>(totalSupply_, null);
+    private stable var tokens_ : [var ?Types.TokenStorage] = Array.init<?Types.TokenStorage>(maxSupply_, null);
     // private stable var listed_ : [Listing] = [];
 
 
@@ -144,7 +144,7 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
 
         //Create token desc based on MintRequest
         let token : Types.TokenStorage = {
-            id = totalSupply_;
+            id = data.tokenId;
             url = data.url;
             name = data.name;
             desc = data.desc;
@@ -156,10 +156,10 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
         tokens_[data.tokenId] := ?token;
         // tokens_ := Array.thaw(Array.append(Array.freeze(tokens_), Array.make(token)));
         //Add new token to user map
-        assignToOwner(caller, totalSupply_);
+        assignToOwner(caller, data.tokenId);
 
         let tokenData = {
-            id = totalSupply_;
+            id = data.tokenId;
             data = [Blob.fromArray(data.data)];
             contentType = data.contentType;
         };
@@ -167,7 +167,7 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
         assetMap_.put(data.url, tokenData);
 
         //Add to ledger
-        let res = await Option.unwrap(storageCanister_).addRecord(caller, #mint, null, Option.make(caller), totalSupply_, null, Time.now());
+        let res = await Option.unwrap(storageCanister_).addRecord(caller, #mint, null, Option.make(caller), data.tokenId, null, Time.now());
 
         return totalSupply_;
     };
@@ -183,6 +183,18 @@ actor class ICPunk (_name: Text, _symbol: Text, _maxSupply: Nat, _owner: Princip
         assert(Option.isNull(tokens_[data.tokenId-1]));
 
         return await mint_(msg.caller, data);
+    };
+
+        //Mints token
+    public shared(msg) func mint_to(owner:Principal, data: MintRequest) : async Nat {
+        //For now only owner can mint
+        assert(msg.caller == owner_);
+        //We can mint until max supply has been reached
+        assert(totalSupply_ < maxSupply_);
+
+        assert(Option.isNull(tokens_[data.tokenId-1]));
+
+        return await mint_(owner, data);
     };
 
     public shared(msg) func burn(tokenId: Nat) : async Bool {

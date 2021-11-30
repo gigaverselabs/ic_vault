@@ -11,6 +11,13 @@
   "dependencies": {
     "web3": "^1.6.1",
     "web3-eth-contract": "^1.6.1",
-    "@metamask/eth-sig-util": "^4.0.0"
+    "@metamask/eth-sig-util": "^4.0.0",
+    "@dfinity/agent": "0.10.1",
+    "@dfinity/auth-client": "0.10.1",
+    "@dfinity/authentication": "0.10.1",
+    "@dfinity/identity": "0.10.1",
+    "@dfinity/principal": "0.10.1",
+    "@dfinity/candid": "0.10.1",
+    "node-fetch": "2.6.6"
   }
 }

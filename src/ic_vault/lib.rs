@@ -65,6 +65,24 @@ pub struct WithdrawalEntry {
     pub time: u128
 }
 
+#[derive(Clone, CandidType, Deserialize)]
+pub struct Property {
+    pub name: String,
+    pub value: String,
+}
+
+#[derive(Clone, CandidType, Deserialize)]
+pub struct MintRequest {
+    pub tokenId: u128,
+    pub name: String,
+    pub url: String,
+    pub desc: String,
+    pub properties: Vec<Property>,
+    pub data: Vec<u8>,
+    pub contentType: String,
+
+}
+
 pub struct State {
     pub is_paused: bool,
     pub validator: [u8; 20],
@@ -119,6 +137,8 @@ fn get_deposits(from: u128) -> Vec<DepositEntry> {
     return get_state().deposits[start..].to_vec();
 }
 
+
+//For now we assume that validators nows what it is doing and target canister supports mint and burn
 #[update]
 fn transfer_notification(from: Principal, to: Principal, token_id: u128, time: u128) -> Result<(), String> {
     let local_id = id();
@@ -184,30 +204,117 @@ fn get_withdrawals(from: u128) -> Vec<WithdrawalEntry> {
 
 //todo: signature verification
 #[update]
-async fn withdraw_nft(token: String, token_id: u128, _signature: String) -> Result<(), String> {    
+async fn withdraw_nft(token: String, token_id: u128, signature: Vec<u8>) -> Result<(), String> {    
     // let local_id = id();
     let msg_caller = caller();
-
     let token_principal = Principal::from_text(&token);
-
     if token_principal.is_err() {
         return Err(String::from("Invalid token canister address"));
     }
-
     let token_prin = token_principal.unwrap();
+
+    let sig_verification = verify_signature(msg_caller, token_prin, token_id, signature);
+    match sig_verification {
+        Ok(()) => {}
+        Err(e) => {return Err(e);}
+    }
 
     let state = get_state();
     let token_val = state.tokens.get_mut(&token);
 
+    let transfer_result = transfer_nft(msg_caller, token_prin, token, token_id).await;
+
+    if transfer_result.is_err() {
+        let mint_result = mint_nft(msg_caller, token_prin, token_id).await;
+
+        match mint_result {
+            Err(e) => return Err(e),
+            Ok(_) => {}
+        }
+    }
+
+    return Ok(());
+}
+
+fn verify_signature(to: Principal, canister: Principal, token_id: u128, signature: Vec<u8>) -> Result<(), String> {
+    if signature.len() != 65 {return Err(String::from("Invalid signature length"))}
+    
+    let mut mut_sig = signature.clone();
+
+    //Fix for signature last byte, in ETH it is 27 or 28, in current list 0 or 1
+    mut_sig[64] -= 27;
+
+    //Conversion to Signature object
+    let sig_opt = recoverable::Signature::try_from(&mut_sig[..]);
+    if sig_opt.is_err() { return Err(String::from("Could not create signature"))}
+    let sig = sig_opt.unwrap();
+
+    //Create message
+    let msg = format!("withdraw_nft,{},{},{}", to, canister, token_id);
+    //Hash of message
+    let prehash = Keccak256::new().chain(msg).finalize();
+    let mut message_hash = Keccak256::new();
+    message_hash.update(b"\x19Ethereum Signed Message:\n32");
+    message_hash.update(prehash);
+    let hash = message_hash.finalize();
+
+    //Recover public key from signature and message hash
+    let pk = sig.recover_verify_key_from_digest_bytes(&hash).unwrap();
+    let pk_point = EncodedPoint::from(&pk);
+
+    //Calculate public wallet address
+    let wallet = &Keccak256::digest(&pk_point.to_untagged_bytes().unwrap()[..])[12..];
+
+    let state = get_state();
+
+    if state.validator != wallet { return Err(String::from("Invalid signature"));}
+
+    return Ok(());
+}
+
+async fn mint_nft(owner: Principal, canister: Principal, token_id: u128) -> Result<(), String> {
+    let event_raw = ic_cdk::export::candid::encode_args((
+        owner, //owner 
+        MintRequest {
+            tokenId: token_id,
+            name: "Test".to_string(),
+            url: "Test".to_string(),
+            desc: "".to_string(),
+            properties: Vec::default(),
+            data: Vec::default(),
+            contentType: "".to_string()
+        }, //mint request 
+    )).unwrap();
+
+    let res = ic_cdk::api::call::call_raw(
+        canister,
+        "mint_to",
+        event_raw.clone(),
+        0
+    ).await;
+
+    match res {
+        Ok(_) => {}
+        Err(e) => {return Err(e.1);}
+
+    }
+
+    return Ok(());
+}
+
+async fn transfer_nft(to: Principal, token_prin: Principal, token: String, token_id: u128) -> Result<(), String> {
+    let state = get_state();
+    let token_val = state.tokens.get_mut(&token);
+
     match token_val {
-        None => { return Err(String::from("Cannot find token canister")); }
+        None => return Err("Canister not found".to_string()),
         Some(value) => {
             if !value.contains(&token_id) {
                 return Err(String::from("Token with id {token_id} not in vault"));
             }
 
             let event_raw = ic_cdk::export::candid::encode_args((
-                msg_caller, //to 
+                to, //to 
                 token_id, //tokenId 
                 None::<Principal>, //notify
             )).unwrap();
@@ -227,7 +334,7 @@ async fn withdraw_nft(token: String, token_id: u128, _signature: String) -> Resu
 
             state.withdrawals.push(
                 WithdrawalEntry {
-                    to: msg_caller,
+                    to: to,
                     token: token_prin,
                     token_id: token_id,
                     time: time() as u128
@@ -239,14 +346,17 @@ async fn withdraw_nft(token: String, token_id: u128, _signature: String) -> Resu
     return Ok(());
 }
 
-#[tokio::test]
-async fn test_withdraw_nft() {
-    init("e0E22fC7B46384B7acf3D6B1a662353cBbc5Dcd4".to_string());
-    let from = Principal::from_text("tushn-jfas4-lrw4y-d3hun-lyc2x-hr2o2-2spfo-ak45s-jzksj-fzvln-yqe").unwrap();
-    let to = Principal::from_text("rwlgt-iiaaa-aaaaa-aaaaa-cai").unwrap();
-    
-    let result = withdraw_nft("rwlgt-iiaaa-aaaaa-aaaaa-cai".to_string(), 1, "".to_string()).await;
 
+#[test]
+fn test_verify_signature() {
+    init("800D04094a14B44D678181eA8B8399BFA030Fea1".to_string());
+
+    let to = Principal::from_text("tushn-jfas4-lrw4y-d3hun-lyc2x-hr2o2-2spfo-ak45s-jzksj-fzvln-yqe").unwrap();
+    let canister = Principal::from_text("rwlgt-iiaaa-aaaaa-aaaaa-cai").unwrap();
+    let token_id = 1;
+    let signature = hex::decode("b7929e167ae72f877459fdc68c49d5dfdb91a4aae3f94cf3785b0604ab3bfbde38eb9aca0ebf0cd4cd912acafa8c21b74fadb1c6864fbeac89b6f0c4ca260a621b").unwrap();
+
+    let result = verify_signature(to, canister, token_id, signature);
     assert_eq!(Ok(()), result);
 }
 

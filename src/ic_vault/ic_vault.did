@@ -20,6 +20,6 @@ service : {
     "withdrawal_count": () -> (nat) query;
     "get_withdrawals": (nat) -> (vec WithdrawalEntry) query;
 
-    "withdraw_nft": (text, nat, text) -> (Result);
+    "withdraw_nft": (text, nat, vec nat8) -> (Result);
     "transfer_notification": (principal, principal, nat, nat) -> (Result);
 }

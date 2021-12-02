@@ -25,6 +25,10 @@
     "nft_storage": {
       "main": "src/nft_token/storage.mo",
       "type": "motoko"
+    },
+    "signature_vault": {
+      "main": "src/ic_vault/signature_vault.mo",
+      "type": "motoko"
     }
   },
   "defaults": {

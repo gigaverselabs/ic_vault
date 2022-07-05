@@ -16,3 +16,6 @@ target/
 # frontend code
 node_modules/
 dist/
+
+canister_ids.json
+canister_ids_polygon.json

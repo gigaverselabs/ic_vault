@@ -6,7 +6,7 @@
    time: nat;
  };
 
-  type WithdrawalEntry = 
+type WithdrawalEntry = 
  record {
    to: principal;
    token: principal;
@@ -14,12 +14,19 @@
    time: nat;
  };
 
-service : {
+ type Result = 
+ variant {
+   Err: text;
+   Ok: text;
+ };
+
+service : (vec text) -> {
     "deposit_count": () -> (nat) query;
     "get_deposits": (nat) -> (vec DepositEntry) query;
     "withdrawal_count": () -> (nat) query;
     "get_withdrawals": (nat) -> (vec WithdrawalEntry) query;
 
     "withdraw_nft": (text, nat, vec nat8) -> (Result);
+    "verify_signature": (principal, principal, nat, vec nat8) -> (Result);
     "transfer_notification": (principal, principal, nat, nat) -> (Result);
 }

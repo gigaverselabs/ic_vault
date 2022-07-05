@@ -1,33 +1,13 @@
 {
   "canisters": {
     "ic_vault": {
+      "build": "./build.sh",
       "candid": "src/ic_vault/ic_vault.did",
-      "package": "ic_vault",
-      "type": "rust"
-    },
-    "ic_vault_assets": {
-      "dependencies": [
-        "ic_vault"
-      ],
-      "frontend": {
-        "entrypoint": "src/ic_vault_assets/src/index.html"
-      },
-      "source": [
-        "src/ic_vault_assets/assets",
-        "dist/ic_vault_assets/"
-      ],
-      "type": "assets"
-    },
-    "nft_token": {
-      "main": "src/nft_token/nft_token.mo",
-      "type": "motoko"
-    },
-    "nft_storage": {
-      "main": "src/nft_token/storage.mo",
-      "type": "motoko"
+      "wasm": "target/wasm32-unknown-unknown/release/ic_vault.wasm",
+      "type": "custom"
     },
     "signature_vault": {
-      "main": "src/ic_vault/signature_vault.mo",
+      "main": "src/signature_vault/signature_vault.mo",
       "type": "motoko"
     }
   },
@@ -37,7 +17,7 @@
       "packtool": ""
     }
   },
-  "dfx": "0.8.4",
+  "dfx": "0.10.0",
   "networks": {
     "local": {
       "bind": "127.0.0.1:8000",

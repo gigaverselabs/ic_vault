@@ -36,7 +36,7 @@ VAULTID="principal \"$VAULTID\""
 # eval dfx canister --no-wallet install nft_token --argument="'(\"NFT\", \"NFT\", 10000, $PUBLIC_KEY)'" -m reinstall
 # eval dfx canister --no-wallet install nft_storage --argument="'($PUBLIC_KEY)'" -m reinstall
 # eval dfx canister --no-wallet install ic_vault --argument="'(\"800D04094a14B44D678181eA8B8399BFA030Fea1\")'"
-eval dfx canister --no-wallet install signature_vault --argument="'(principal \"wjien-jri4e-qykwt-hxqvk-ffrh6-uitzv-qjpm6-clame-bkgvt-wwgbv-tqe\")'"
+eval dfx canister --no-wallet install signature_vault --argument="'(principal \"wjien-jri4e-qykwt-hxqvk-ffrh6-uitzv-qjpm6-clame-bkgvt-wwgbv-tqe\")'" -m upgrade
 
 # eval dfx canister --no-wallet install icpunks_assets -m reinstall
 # eval dfx canister --no-wallet call icpunks set_owner "'(principal \"xm4y3-54lfy-pkijk-3gpzg-gsm3l-yr7al-i5ai7-odpf7-l2pmv-222rl-7qe\")'"
